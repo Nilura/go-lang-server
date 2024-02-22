@@ -2,91 +2,70 @@ package commands
 
 import (
 	"fmt"
+	"net/http"
 	"os"
-
-	"github.com/slack-go/slack"
 )
 
-var targetChannelID string
+func HandleSlashCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
 
-func HandleSlashCommand(command slack.SlashCommand, client *slack.Client) error {
-
-	switch command.Command {
-	case "/set-channel":
-
-		return handleSetTargetChannelCommand(command, client)
-	case "/reset":
-
-		return handleResetTargetChannelCommand(command, client)
+	err := r.ParseForm()
+	if err != nil {
+		return err
 	}
+
+	text := r.Form.Get("text")
+	//	userID := r.Form.Get("user_id")
+
+	os.Setenv("ERROR_CHANNEL_ID", text)
+
+	responseText := fmt.Sprintf("Successfully registered the channel %s", text)
+
+	_, err = w.Write([]byte(responseText))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func handleSetTargetChannelCommand(command slack.SlashCommand, client *slack.Client) error {
+func HandleKeywordCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
 
-	_, _, err := client.PostMessage(command.ChannelID, slack.MsgOptionText("Please enter the target channel ID:", false))
+	err := r.ParseForm()
 	if err != nil {
-		return fmt.Errorf("failed to post message: %w", err)
+		return err
+	}
+	text := r.Form.Get("text")
+	//userID := r.Form.Get("user_id")
+
+	os.Setenv("KEYWORD", text)
+
+	responseText := "The keyword has been set to the target channel."
+
+	_, err = w.Write([]byte(responseText))
+	if err != nil {
+		return err
 	}
 
-	targetChannelID = command.Text
-
-	os.Setenv("ERROR_CHANNEL_ID", targetChannelID)
-
-	response := fmt.Sprintf("Target channel ID set to %s", targetChannelID)
-	_, _, err = client.PostMessage(command.ChannelID, slack.MsgOptionText(response, false))
-	if err != nil {
-		return fmt.Errorf("failed to post message: %w", err)
-	}
-
-	// _, _, err = client.PostMessage(command.ChannelID, slack.MsgOptionText("Please enter the keyword to filter:", false))
-
-	// if err != nil {
-	// 	return fmt.Errorf("failed to post message: %w", err)
-	// }
-
-	confirmationMsg := "Successfully registered"
-	_, _, err = client.PostMessage(command.ChannelID, slack.MsgOptionText(confirmationMsg, false))
-	if err != nil {
-		return fmt.Errorf("failed to post confirmation message: %w", err)
-	}
 	return nil
 }
 
-func handleResetTargetChannelCommand(command slack.SlashCommand, client *slack.Client) error {
+func HandleResetCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
+
+	err := r.ParseForm()
+	if err != nil {
+		return err
+	}
+	//userID := r.Form.Get("user_id")
+
 	os.Unsetenv("ERROR_CHANNEL_ID")
-	targetChannelID = ""
+	os.Unsetenv("KEYWORD")
 
-	response := "Target channel ID has been reset"
-	_, _, err := client.PostMessage(command.ChannelID, slack.MsgOptionText(response, false))
+	responseText := "Target channel ID has been reset "
+	fmt.Println(responseText)
+	_, err = w.Write([]byte(responseText))
 	if err != nil {
-		return fmt.Errorf("failed to post message: %w", err)
+		return err
 	}
 
 	return nil
 }
-
-// func handleHelloCommand(command slack.SlashCommand, client *slack.Client) error {
-
-// 	attachment := slack.Attachment{}
-
-// 	attachment.Fields = []slack.AttachmentField{
-// 		{
-// 			Title: "Date",
-// 			Value: time.Now().String(),
-// 		}, {
-// 			Title: "Initializer",
-// 			Value: command.UserName,
-// 		},
-// 	}
-
-// 	attachment.Text = fmt.Sprintf("Hello %s", command.Text)
-// 	attachment.Color = "#4af030"
-
-// 	_, _, err := client.PostMessage(targetChannelID, slack.MsgOptionAttachments(attachment))
-// 	if err != nil {
-// 		return fmt.Errorf("failed to post message: %w", err)
-// 	}
-
-// 	return nil
-// }
