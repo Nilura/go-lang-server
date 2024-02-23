@@ -58,7 +58,6 @@ func main() {
 		port = "8082"
 	}
 
-	config.ConnectPostgres()
 	go reloadConfiguration()
 
 	log.Printf("Server listening on port %s...", port)
