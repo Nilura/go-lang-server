@@ -50,6 +50,7 @@ func main() {
 	http.HandleFunc("/slack/reset", handleResetCommand)
 	http.HandleFunc("/slack/keyword", handleKeywordCommand)
 	http.HandleFunc("/slack/events", handleEvent)
+
 	port := os.Getenv("PORT")
 
 	if port == "" {
@@ -257,6 +258,7 @@ var messageCache = make(map[string]bool)
 func postEventToChannel(token string, eventData map[string]interface{}) error {
 	keyword := os.Getenv("KEYWORD")
 	text := eventData["text"].(string)
+
 	fmt.Println("Received event data:", eventData)
 
 	if strings.Contains(text, keyword) {

@@ -24,7 +24,6 @@ func PublishMsg(accessToken string, channelID string, payload map[string]interfa
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	// Send HTTP request
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
