@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	commands "go-lang-server/Commands"
+	config "go-lang-server/Config"
 	view "go-lang-server/View"
 	"io/ioutil"
 	"strings"
@@ -56,6 +57,8 @@ func main() {
 	if port == "" {
 		port = "8082"
 	}
+
+	config.ConnectPostgres()
 	go reloadConfiguration()
 
 	log.Printf("Server listening on port %s...", port)
@@ -258,8 +261,8 @@ var messageCache = make(map[string]bool)
 func postEventToChannel(token string, eventData map[string]interface{}) error {
 	keyword := os.Getenv("KEYWORD")
 	text := eventData["text"].(string)
-
-	fmt.Println("Received event data:", eventData)
+	metadata := eventData["metadata"].(string)
+	fmt.Println("Received event data:", metadata)
 
 	if strings.Contains(text, keyword) {
 
