@@ -3,11 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	commands "go-lang-server/Commands"
-	config "go-lang-server/Config"
-	view "go-lang-server/View"
+	commands "go-lang-server/commands"
+	event "go-lang-server/events"
+	view "go-lang-server/view"
 	"io/ioutil"
-	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/slack-go/slack"
@@ -50,7 +49,10 @@ func main() {
 	http.HandleFunc("/slack/command", handleSlashCommand)
 	http.HandleFunc("/slack/reset", handleResetCommand)
 	http.HandleFunc("/slack/keyword", handleKeywordCommand)
-	http.HandleFunc("/slack/events", handleEvent)
+	//http.HandleFunc("/slack/events", event.HandleEvent)
+	http.HandleFunc("/slack/events", func(w http.ResponseWriter, r *http.Request) {
+		event.HandleEvent(w, r, AccessToken, errorChannelID)
+	})
 
 	port := os.Getenv("PORT")
 
@@ -74,7 +76,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	webhookURL, accessTokenResponse := getOAuthAccessToken(code)
-	fmt.Fprintf(w, "Webhook: %s", webhookURL)
+	fmt.Fprintf(w, "The Randoli Slack App was installed successfully Please copy the following webhook url when you create the integration (This is also available from the Slack Apps Home Page): %s", webhookURL)
 
 	api := slack.New(accessTokenResponse.AccessToken, slack.OptionDebug(true))
 
@@ -181,61 +183,6 @@ func getOAuthAccessToken(code string) (string, AccessTokenResponse) {
 	return accessTokenResponse.IncomingWebhook.URL, accessTokenResponse
 }
 
-func handleEvent(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Error reading request body", http.StatusInternalServerError)
-		return
-	}
-
-	var payload map[string]interface{}
-	if err := json.Unmarshal(body, &payload); err != nil {
-		http.Error(w, "Error parsing JSON payload", http.StatusBadRequest)
-		return
-	}
-
-	eventType, ok := payload["type"].(string)
-	if !ok {
-		http.Error(w, "Event type not found", http.StatusBadRequest)
-		return
-	}
-
-	switch eventType {
-	case "url_verification":
-
-		challenge, ok := payload["challenge"].(string)
-		if !ok {
-			http.Error(w, "Challenge parameter not found", http.StatusBadRequest)
-			return
-		}
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, challenge)
-
-	case "event_callback":
-
-		eventData := payload["event"].(map[string]interface{})
-		eventType := eventData["type"].(string)
-
-		switch eventType {
-		case "message":
-			postEventToChannel(AccessToken, eventData)
-		case "reaction_added":
-
-		default:
-			fmt.Printf("Unsupported event type: %s\n", eventType)
-		}
-
-	default:
-		http.Error(w, "Unsupported event type", http.StatusBadRequest)
-	}
-}
-
 func reloadConfiguration() {
 	for {
 		time.Sleep(5 * time.Second)
@@ -253,32 +200,4 @@ func reloadConfiguration() {
 		fmt.Println("channelID", errorChannelID)
 		fmt.Println("currentKeyword", keyword)
 	}
-}
-
-var messageCache = make(map[string]bool)
-
-func postEventToChannel(token string, eventData map[string]interface{}) error {
-	keyword := os.Getenv("KEYWORD")
-	text := eventData["text"].(string)
-	metadata := eventData["metadata"].(string)
-	fmt.Println("Received event data:", metadata)
-
-	if strings.Contains(text, keyword) {
-
-		if messageCache[text] {
-			fmt.Printf("Message with text '%s' has already been posted\n", text)
-			return nil
-		}
-
-		fmt.Println("Posting message to channel...")
-		err := view.PublishMsg(token, errorChannelID, eventData)
-		if err != nil {
-			return err
-		}
-
-		messageCache[text] = true
-		fmt.Printf("Message with text '%s' has been successfully posted\n", text)
-	}
-
-	return nil
 }
