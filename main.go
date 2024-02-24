@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	localStorage "go-lang-server/LocalDb"
 	commands "go-lang-server/commands"
 	view "go-lang-server/view"
 	"io/ioutil"
@@ -41,6 +40,8 @@ type AccessTokenResponse struct {
 var errorChannelID string
 var keyword string
 
+var accessTokenMap = make(map[string]string)
+
 func main() {
 	godotenv.Load(".env")
 
@@ -77,7 +78,10 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	api := slack.New(accessTokenResponse.AccessToken, slack.OptionDebug(true))
 
 	token := accessTokenResponse.Bot.Bot_access_token
-	localStorage.SetItem(accessTokenResponse.Bot.Bot_user_id, accessTokenResponse.Bot.Bot_access_token)
+	fmt.Println("bot_user_id:%s" + accessTokenResponse.Bot.Bot_user_id)
+	fmt.Println("user_id:%s" + accessTokenResponse.UserID)
+	//localStorage.SetItem("key", "")
+	accessTokenMap[accessTokenResponse.Bot.Bot_user_id] = accessTokenResponse.AccessToken
 	//AccessToken = accessTokenResponse.AccessToken
 	message := fmt.Sprintf("Webhook URL: %s", webhookURL)
 
@@ -248,15 +252,16 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Bot ID not found in event data", http.StatusBadRequest)
 			return
 		}
-
-		accessToken := localStorage.GetItem(botID)
-		if accessToken == "" {
+		fmt.Println("Posting message to channel...%s", botID)
+		accessToken, found := accessTokenMap[botID]
+		if !found {
 			http.Error(w, "Access token not found for bot ID", http.StatusInternalServerError)
 			return
 		}
+
 		switch eventType {
 		case "message":
-			postEventToChannel(AccessToken, eventData)
+			postEventToChannel(accessToken, eventData)
 		case "reaction_added":
 
 		default:
