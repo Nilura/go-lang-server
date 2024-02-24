@@ -6,6 +6,8 @@ import (
 	"os"
 )
 
+var ChannelMap = make(map[string]string)
+
 func HandleSlashCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
 
 	err := r.ParseForm()
@@ -14,9 +16,11 @@ func HandleSlashCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	text := r.Form.Get("text")
-	//	userID := r.Form.Get("user_id")
+	userID := r.Form.Get("user_id")
+	fmt.Println("userId:%s" + userID)
+	ChannelMap[userID] = text
 
-	os.Setenv("ERROR_CHANNEL_ID", text)
+	//os.Setenv("ERROR_CHANNEL_ID", text)
 
 	responseText := fmt.Sprintf("Successfully registered the channel %s", text)
 

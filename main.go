@@ -6,15 +6,15 @@ import (
 	commands "go-lang-server/commands"
 	view "go-lang-server/view"
 	"io/ioutil"
+	"strings"
+
+	"github.com/joho/godotenv"
+	"github.com/slack-go/slack"
 
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
-
-	"github.com/joho/godotenv"
-	"github.com/slack-go/slack"
 )
 
 type AccessTokenResponse struct {
@@ -39,8 +39,8 @@ type AccessTokenResponse struct {
 
 var errorChannelID string
 var keyword string
-
 var accessTokenMap = make(map[string]string)
+var AccessToken string
 
 func main() {
 	godotenv.Load(".env")
@@ -78,11 +78,8 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	api := slack.New(accessTokenResponse.AccessToken, slack.OptionDebug(true))
 
 	token := accessTokenResponse.Bot.Bot_access_token
-	fmt.Println("bot_user_id:%s" + accessTokenResponse.Bot.Bot_user_id)
-	fmt.Println("user_id:%s" + accessTokenResponse.UserID)
-	//localStorage.SetItem("key", "")
+	AccessToken = accessTokenResponse.AccessToken
 	accessTokenMap[accessTokenResponse.Bot.Bot_user_id] = accessTokenResponse.AccessToken
-	//AccessToken = accessTokenResponse.AccessToken
 	message := fmt.Sprintf("Webhook URL: %s", webhookURL)
 
 	_, _, err := api.PostMessage(accessTokenResponse.UserID, slack.MsgOptionText(message, false))
@@ -184,25 +181,6 @@ func getOAuthAccessToken(code string) (string, AccessTokenResponse) {
 	return accessTokenResponse.IncomingWebhook.URL, accessTokenResponse
 }
 
-func reloadConfiguration() {
-	for {
-		time.Sleep(5 * time.Second)
-		newTargetChannelID := os.Getenv("ERROR_CHANNEL_ID")
-		newKeyword := os.Getenv("KEYWORD")
-		if newTargetChannelID != errorChannelID {
-			errorChannelID = newTargetChannelID
-
-		}
-		if newKeyword != keyword {
-			keyword = newKeyword
-
-		}
-
-		fmt.Println("channelID", errorChannelID)
-		fmt.Println("currentKeyword", keyword)
-	}
-}
-
 func handleEvent(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -241,27 +219,39 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 
 	case "event_callback":
 
-		eventData, ok := payload["event"].(map[string]interface{})
-		if !ok {
-			http.Error(w, "Event data not found", http.StatusBadRequest)
+		eventData := payload["event"].(map[string]interface{})
+
+		eventType := eventData["type"].(string)
+		userData, ok := payload["authorizations"].([]interface{})
+		if !ok || len(userData) == 0 {
+			http.Error(w, "User data not found", http.StatusBadRequest)
 			return
 		}
 
-		botID, ok := eventData["bot_id"].(string)
+		userAuthorization, ok := userData[0].(map[string]interface{})
 		if !ok {
-			http.Error(w, "Bot ID not found in event data", http.StatusBadRequest)
+			http.Error(w, "User authorization data not found", http.StatusBadRequest)
 			return
 		}
-		fmt.Println("Posting message to channel...%s", botID)
-		accessToken, found := accessTokenMap[botID]
+
+		userID, ok := userAuthorization["user_id"].(string)
+		if !ok {
+			http.Error(w, "User ID not found", http.StatusBadRequest)
+			return
+		}
+		fmt.Println("Received UserId:", userID)
+
+		accessToken, found := accessTokenMap[userID]
+		fmt.Println("accessToken:", accessToken)
+		fmt.Println("Map:", accessTokenMap)
 		if !found {
 			http.Error(w, "Access token not found for bot ID", http.StatusInternalServerError)
 			return
 		}
-
 		switch eventType {
 		case "message":
-			postEventToChannel(accessToken, eventData)
+
+			postEventToChannel(accessToken, eventData, userID)
 		case "reaction_added":
 
 		default:
@@ -273,13 +263,32 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func reloadConfiguration() {
+	for {
+		time.Sleep(5 * time.Second)
+		newTargetChannelID := os.Getenv("ERROR_CHANNEL_ID")
+		newKeyword := os.Getenv("KEYWORD")
+		if newTargetChannelID != errorChannelID {
+			errorChannelID = newTargetChannelID
+
+		}
+		if newKeyword != keyword {
+			keyword = newKeyword
+
+		}
+
+		fmt.Println("channelID", errorChannelID)
+		fmt.Println("currentKeyword", keyword)
+	}
+}
+
 var messageCache = make(map[string]bool)
 
-func postEventToChannel(token string, eventData map[string]interface{}) error {
+func postEventToChannel(token string, eventData map[string]interface{}, userId string) error {
 	keyword := os.Getenv("KEYWORD")
 	text := eventData["text"].(string)
-	//t := eventData["attachments"].([]map[string]interface{})
-	fmt.Println("Received event data:", token)
+
+	fmt.Println("Received event data:", eventData)
 
 	if strings.Contains(text, keyword) {
 
@@ -289,7 +298,7 @@ func postEventToChannel(token string, eventData map[string]interface{}) error {
 		}
 
 		fmt.Println("Posting message to channel...")
-		err := view.PublishMsg(token, errorChannelID, eventData)
+		err := view.PublishMsg(token, commands.ChannelMap[userId], eventData)
 		if err != nil {
 			return err
 		}
