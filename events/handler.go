@@ -73,8 +73,8 @@ var messageCache = make(map[string]bool)
 func postEventToChannel(token string, eventData map[string]interface{}, errorChannelID string) error {
 	keyword := os.Getenv("KEYWORD")
 	text := eventData["text"].(string)
-	t := eventData["attachments"].([]map[string]interface{})
-	fmt.Println("Received event data:", t)
+	//t := eventData["attachments"].([]map[string]interface{})
+	fmt.Println("Received event data:", errorChannelID)
 
 	if strings.Contains(text, keyword) {
 
