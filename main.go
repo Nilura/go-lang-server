@@ -3,18 +3,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	localStorage "go-lang-server/LocalDb"
 	commands "go-lang-server/commands"
-	event "go-lang-server/events"
 	view "go-lang-server/view"
 	"io/ioutil"
-
-	"github.com/joho/godotenv"
-	"github.com/slack-go/slack"
 
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
+	"github.com/slack-go/slack"
 )
 
 type AccessTokenResponse struct {
@@ -40,8 +41,6 @@ type AccessTokenResponse struct {
 var errorChannelID string
 var keyword string
 
-var AccessToken string
-
 func main() {
 	godotenv.Load(".env")
 
@@ -49,10 +48,7 @@ func main() {
 	http.HandleFunc("/slack/command", handleSlashCommand)
 	http.HandleFunc("/slack/reset", handleResetCommand)
 	http.HandleFunc("/slack/keyword", handleKeywordCommand)
-	//http.HandleFunc("/slack/events", event.HandleEvent)
-	http.HandleFunc("/slack/events", func(w http.ResponseWriter, r *http.Request) {
-		event.HandleEvent(w, r, AccessToken, errorChannelID)
-	})
+	http.HandleFunc("/slack/events", handleEvent)
 
 	port := os.Getenv("PORT")
 
@@ -81,7 +77,8 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	api := slack.New(accessTokenResponse.AccessToken, slack.OptionDebug(true))
 
 	token := accessTokenResponse.Bot.Bot_access_token
-	AccessToken = accessTokenResponse.AccessToken
+	localStorage.SetItem(accessTokenResponse.Bot.Bot_user_id, accessTokenResponse.Bot.Bot_access_token)
+	//AccessToken = accessTokenResponse.AccessToken
 	message := fmt.Sprintf("Webhook URL: %s", webhookURL)
 
 	_, _, err := api.PostMessage(accessTokenResponse.UserID, slack.MsgOptionText(message, false))
@@ -200,4 +197,101 @@ func reloadConfiguration() {
 		fmt.Println("channelID", errorChannelID)
 		fmt.Println("currentKeyword", keyword)
 	}
+}
+
+func handleEvent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
+		return
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		http.Error(w, "Error parsing JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	eventType, ok := payload["type"].(string)
+	if !ok {
+		http.Error(w, "Event type not found", http.StatusBadRequest)
+		return
+	}
+
+	switch eventType {
+	case "url_verification":
+
+		challenge, ok := payload["challenge"].(string)
+		if !ok {
+			http.Error(w, "Challenge parameter not found", http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, challenge)
+
+	case "event_callback":
+
+		eventData, ok := payload["event"].(map[string]interface{})
+		if !ok {
+			http.Error(w, "Event data not found", http.StatusBadRequest)
+			return
+		}
+
+		botID, ok := eventData["bot_id"].(string)
+		if !ok {
+			http.Error(w, "Bot ID not found in event data", http.StatusBadRequest)
+			return
+		}
+
+		accessToken := localStorage.GetItem(botID)
+		if accessToken == "" {
+			http.Error(w, "Access token not found for bot ID", http.StatusInternalServerError)
+			return
+		}
+		switch eventType {
+		case "message":
+			postEventToChannel(AccessToken, eventData)
+		case "reaction_added":
+
+		default:
+			fmt.Printf("Unsupported event type: %s\n", eventType)
+		}
+
+	default:
+		http.Error(w, "Unsupported event type", http.StatusBadRequest)
+	}
+}
+
+var messageCache = make(map[string]bool)
+
+func postEventToChannel(token string, eventData map[string]interface{}) error {
+	keyword := os.Getenv("KEYWORD")
+	text := eventData["text"].(string)
+	//t := eventData["attachments"].([]map[string]interface{})
+	fmt.Println("Received event data:", token)
+
+	if strings.Contains(text, keyword) {
+
+		if messageCache[text] {
+			fmt.Printf("Message with text '%s' has already been posted\n", text)
+			return nil
+		}
+
+		fmt.Println("Posting message to channel...")
+		err := view.PublishMsg(token, errorChannelID, eventData)
+		if err != nil {
+			return err
+		}
+
+		messageCache[text] = true
+		fmt.Printf("Message with text '%s' has been successfully posted\n", text)
+	}
+
+	return nil
 }
