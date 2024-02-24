@@ -56,7 +56,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, AccessToken string, err
 		switch eventType {
 		case "message":
 
-			postEventToChannel(AccessToken, eventData)
+			postEventToChannel(AccessToken, eventData, errorChannelID)
 		case "reaction_added":
 
 		default:
@@ -70,7 +70,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request, AccessToken string, err
 
 var messageCache = make(map[string]bool)
 
-func postEventToChannel(token string, eventData map[string]interface{}) error {
+func postEventToChannel(token string, eventData map[string]interface{}, errorChannelID string) error {
 	keyword := os.Getenv("KEYWORD")
 	text := eventData["text"].(string)
 	t := eventData["attachments"].([]map[string]interface{})
