@@ -14,7 +14,7 @@ func HandleSlashCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Println("&&&&&&&&& %s", r)
 	text := r.Form.Get("text")
 	userID := r.Form.Get("user_id")
 	fmt.Println("userId:%s" + userID)

@@ -40,6 +40,7 @@ type AccessTokenResponse struct {
 var errorChannelID string
 var keyword string
 var accessTokenMap = make(map[string]string)
+var userIdMap = make(map[string]string)
 var AccessToken string
 
 func main() {
@@ -80,6 +81,9 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	token := accessTokenResponse.Bot.Bot_access_token
 	AccessToken = accessTokenResponse.AccessToken
 	accessTokenMap[accessTokenResponse.Bot.Bot_user_id] = accessTokenResponse.AccessToken
+	userIdMap[accessTokenResponse.Bot.Bot_user_id] = accessTokenResponse.UserID
+	fmt.Println("UserID%s", accessTokenResponse.UserID)
+	fmt.Println("BotID%s", accessTokenResponse.Bot.Bot_user_id)
 	message := fmt.Sprintf("Webhook URL: %s", webhookURL)
 
 	_, _, err := api.PostMessage(accessTokenResponse.UserID, slack.MsgOptionText(message, false))
@@ -192,7 +196,7 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
 		return
 	}
-
+	fmt.Println("Body:", string(body))
 	var payload map[string]interface{}
 	if err := json.Unmarshal(body, &payload); err != nil {
 		http.Error(w, "Error parsing JSON payload", http.StatusBadRequest)
@@ -242,6 +246,8 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Received UserId:", userID)
 
 		accessToken, found := accessTokenMap[userID]
+
+		user_id, ok := userIdMap[userID]
 		fmt.Println("accessToken:", accessToken)
 		fmt.Println("Map:", accessTokenMap)
 		if !found {
@@ -251,7 +257,7 @@ func handleEvent(w http.ResponseWriter, r *http.Request) {
 		switch eventType {
 		case "message":
 
-			postEventToChannel(accessToken, eventData, userID)
+			postEventToChannel(accessToken, eventData, user_id)
 		case "reaction_added":
 
 		default:
