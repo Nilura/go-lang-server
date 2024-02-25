@@ -41,7 +41,6 @@ var errorChannelID string
 var keyword string
 var accessTokenMap = make(map[string]string)
 var userIdMap = make(map[string]string)
-var AccessToken string
 
 func main() {
 	godotenv.Load(".env")
@@ -79,7 +78,7 @@ func handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	api := slack.New(accessTokenResponse.AccessToken, slack.OptionDebug(true))
 
 	token := accessTokenResponse.Bot.Bot_access_token
-	AccessToken = accessTokenResponse.AccessToken
+
 	accessTokenMap[accessTokenResponse.Bot.Bot_user_id] = accessTokenResponse.AccessToken
 	userIdMap[accessTokenResponse.Bot.Bot_user_id] = accessTokenResponse.UserID
 	fmt.Println("UserID%s", accessTokenResponse.UserID)
@@ -291,12 +290,12 @@ func reloadConfiguration() {
 var messageCache = make(map[string]bool)
 
 func postEventToChannel(token string, eventData map[string]interface{}, userId string) error {
-	keyword := os.Getenv("KEYWORD")
+	//keyword := os.Getenv("KEYWORD")
 	text := eventData["text"].(string)
-
+	keyValue := commands.KeyMap[userId]
 	fmt.Println("Received event data:", eventData)
 
-	if strings.Contains(text, keyword) {
+	if strings.Contains(text, keyValue.Keyword) {
 
 		if messageCache[text] {
 			fmt.Printf("Message with text '%s' has already been posted\n", text)
