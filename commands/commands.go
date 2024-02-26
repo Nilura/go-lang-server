@@ -13,13 +13,41 @@ type KeyValue struct {
 var ChannelMap = make(map[string]string)
 var KeyMap = make(map[string]KeyValue)
 
-func HandleSlashCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
+func HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
+
+	err := handleSlashCommandFromHTTP(w, r)
+	if err != nil {
+		http.Error(w, "Error handling slash command: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func HandleResetCommand(w http.ResponseWriter, r *http.Request) {
+
+	err := handleResetCommandFromHTTP(w, r)
+	if err != nil {
+		http.Error(w, "Error handling slash command: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func HandleKeywordCommand(w http.ResponseWriter, r *http.Request) {
+
+	err := handleKeywordCommandFromHTTP(w, r)
+	if err != nil {
+		http.Error(w, "Error handling slash command: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func handleSlashCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
 
 	err := r.ParseForm()
 	if err != nil {
 		return err
 	}
-
+	fmt.Println("==========")
+	fmt.Println(r)
 	text := r.Form.Get("text")
 	userID := r.Form.Get("user_id")
 	fmt.Println("userId:%s" + userID)
@@ -35,7 +63,7 @@ func HandleSlashCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func HandleKeywordCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
+func handleKeywordCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
 
 	err := r.ParseForm()
 	if err != nil {
@@ -44,13 +72,13 @@ func HandleKeywordCommandFromHTTP(w http.ResponseWriter, r *http.Request) error 
 	text := r.Form.Get("text")
 	userID := r.Form.Get("user_id")
 	channelID := ChannelMap[userID]
+
 	newValue := KeyValue{
 		ChannelID: channelID,
 		Keyword:   text,
 	}
 
 	KeyMap[userID] = newValue
-	//	os.Setenv("KEYWORD", text)
 	fmt.Println("&&&&&&&&& %s", KeyMap)
 	responseText := "The keyword has been set to the target channel."
 
@@ -62,7 +90,7 @@ func HandleKeywordCommandFromHTTP(w http.ResponseWriter, r *http.Request) error 
 	return nil
 }
 
-func HandleResetCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
+func handleResetCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
 
 	err := r.ParseForm()
 	if err != nil {
@@ -73,8 +101,6 @@ func HandleResetCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
 	KeyMap = make(map[string]KeyValue)
 	fmt.Println("###### %s", KeyMap)
 	fmt.Println("@@@@@@ %s", ChannelMap)
-	// os.Unsetenv("ERROR_CHANNEL_ID")
-	// os.Unsetenv("KEYWORD")
 
 	responseText := "Target channel ID has been reset "
 	fmt.Println(responseText)
