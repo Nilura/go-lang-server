@@ -53,11 +53,13 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 
 		eventType := eventData["type"].(string)
 
-		// attachments, ok := eventData["attachments"].([]interface{})
-		// if !ok || len(attachments) == 0 {
-		// 	fmt.Println("No attachments found")
-		// 	return
-		// }
+		attachments, ok := eventData["attachments"].([]interface{})
+		if !ok || len(attachments) == 0 {
+			fmt.Println("No attachments found")
+			return
+		}
+
+	     fmt.Println("Extracted text:", attachments)
 
 		// // Assuming there's only one attachment for simplicity
 		// attachment := attachments[0].(map[string]interface{})
