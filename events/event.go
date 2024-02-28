@@ -80,12 +80,12 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Extracting the text from the first field
-		firstField := fields[0].(map[string]interface{})
-		text, ok := firstField["text"].(string)
-		if !ok {
-			fmt.Println("Text not found in the first field")
-			return
-		}
+		// firstField := fields[0].(map[string]interface{})
+		// text, ok := firstField["text"].(string)
+		// if !ok {
+		// 	fmt.Println("Text not found in the first field")
+		// 	return
+		// }
 
 		 fmt.Println("Extracted text:", text)
 
