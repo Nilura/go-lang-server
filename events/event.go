@@ -69,10 +69,10 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("No blocks found in the attachment")
 			return
 		}
-              fmt.Println("Blocks text:", blocks)
-		// // Assuming there's only one block for simplicity
-		// block := blocks[0].(map[string]interface{})
-
+             
+		
+	        fields := block["fields"].([]interface{})
+		fmt.Println("Blocks text:", blocks)
 		// fields, ok := block["fields"].([]interface{})
 		// if !ok || len(fields) < 1 {
 		// 	fmt.Println("No fields found in the block")
