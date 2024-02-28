@@ -87,7 +87,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 		// 	return
 		// }
 
-		 fmt.Println("Extracted text:", text)
+		// fmt.Println("Extracted text:", text)
 
 		userData, ok := payload["authorizations"].([]interface{})
 		if !ok || len(userData) == 0 {
