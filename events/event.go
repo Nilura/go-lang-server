@@ -72,12 +72,12 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
              
 		
 	 //        fields := blocks["fields"].([]interface{})
-		// fmt.Println("Blocks text:", fields)
-		fields, ok := blocks["fields"].([]interface{})
-		if !ok || len(fields) < 1 {
-			fmt.Println("No fields found in the block")
-			return
-		}
+		fmt.Println("Blocks text:", blocks)
+		// fields, ok := blocks["fields"].([]interface{})
+		// if !ok || len(fields) < 1 {
+		// 	fmt.Println("No fields found in the block")
+		// 	return
+		// }
 
 		// Extracting the text from the first field
 		// firstField := fields[0].(map[string]interface{})
