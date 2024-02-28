@@ -59,7 +59,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-	     fmt.Println("Extracted text:", attachments)
+	     fmt.Println("Extracted text:", attachments[0])
 
 		// // Assuming there's only one attachment for simplicity
 		// attachment := attachments[0].(map[string]interface{})
