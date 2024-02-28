@@ -76,14 +76,13 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Blocks text:", block)
 		fields := block["fields"].([]interface{})
 			fmt.Println("Blocks text:", block)
-		 len(fields) > 0 {
+		if len(fields) > 0 {
 		    firstField := fields[0].(map[string]interface{})
 		    text := firstField["text"].(string)
 		    fmt.Println("Text of the first field:", text)
 		} else {
 		    fmt.Println("No fields found in the block")
 		}
-
 		userData, ok := payload["authorizations"].([]interface{})
 		if !ok || len(userData) == 0 {
 			http.Error(w, "User data not found", http.StatusBadRequest)
