@@ -72,7 +72,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
              
 		
 	        fields := blocks["fields"].([]interface{})
-		fmt.Println("Blocks text:", fields[0])
+		//fmt.Println("Blocks text:", fields[0])
 		// fields, ok := blocks["fields"].([]interface{})
 		// if !ok || len(fields) < 1 {
 		// 	fmt.Println("No fields found in the block")
