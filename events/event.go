@@ -71,23 +71,23 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 		}
              
 		
-	        fields := blocks["fields"].([]interface{})
-		fmt.Println("Blocks text:", fields)
-		// fields, ok := block["fields"].([]interface{})
-		// if !ok || len(fields) < 1 {
-		// 	fmt.Println("No fields found in the block")
-		// 	return
-		// }
+	 //        fields := blocks["fields"].([]interface{})
+		// fmt.Println("Blocks text:", fields)
+		fields, ok := block["fields"].([]interface{})
+		if !ok || len(fields) < 1 {
+			fmt.Println("No fields found in the block")
+			return
+		}
 
-		// // Extracting the text from the first field
-		// firstField := fields[0].(map[string]interface{})
-		// text, ok := firstField["text"].(string)
-		// if !ok {
-		// 	fmt.Println("Text not found in the first field")
-		// 	return
-		// }
+		// Extracting the text from the first field
+		firstField := fields[0].(map[string]interface{})
+		text, ok := firstField["text"].(string)
+		if !ok {
+			fmt.Println("Text not found in the first field")
+			return
+		}
 
-		// fmt.Println("Extracted text:", text)
+		 fmt.Println("Extracted text:", text)
 
 		userData, ok := payload["authorizations"].([]interface{})
 		if !ok || len(userData) == 0 {
