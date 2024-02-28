@@ -71,11 +71,11 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 		}
              
 		
-	      //  fields := blocks["fields"].([]interface{})
+	   
 		block := blocks[0].(map[string]interface{})
-		fmt.Println("Blocks text:", block)
+	
 		fields := block["fields"].([]interface{})
-			fmt.Println("Blocks text:", block)
+		fmt.Println("Blocks text:", fields[0])
 		if len(fields) > 0 {
 		    firstField := fields[0].(map[string]interface{})
 		    text := firstField["text"].(string)
