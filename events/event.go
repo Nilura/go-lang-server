@@ -29,8 +29,8 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metaData := payload["metadata"].(map[string]interface{})
-	fmt.Println("Metadata:", metaData)
+	//metaData := payload["metadata"].(map[string]interface{})
+	fmt.Println("Metadata:", payload)
 
 	eventType, ok := payload["type"].(string)
 	if !ok {
