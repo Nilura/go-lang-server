@@ -102,7 +102,7 @@ func handleResetCommandFromHTTP(w http.ResponseWriter, r *http.Request) error {
 	fmt.Println("###### %s", KeyMap)
 	fmt.Println("@@@@@@ %s", ChannelMap)
 
-	responseText := "Target channel ID has been reset "
+	responseText := "Target channel ID and Keyword has been reset "
 	fmt.Println(responseText)
 	_, err = w.Write([]byte(responseText))
 	if err != nil {
