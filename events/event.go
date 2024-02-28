@@ -16,8 +16,7 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-		text := r.Form.Get("metadata")
-	fmt.Println(text)
+	
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
@@ -29,6 +28,9 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error parsing JSON payload", http.StatusBadRequest)
 		return
 	}
+
+	metaData := payload["metadata"].(map[string]interface{})
+	fmt.Println("Metadata:", metaData)
 
 	eventType, ok := payload["type"].(string)
 	if !ok {
