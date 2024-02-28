@@ -59,17 +59,17 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-	     fmt.Println("Extracted text:", attachments[0])
-
+	     
+		
 		// // Assuming there's only one attachment for simplicity
-		// attachment := attachments[0].(map[string]interface{})
-
-		// blocks, ok := attachment["blocks"].([]interface{})
-		// if !ok || len(blocks) == 0 {
-		// 	fmt.Println("No blocks found in the attachment")
-		// 	return
-		// }
-
+		 attachment := attachments[0].(map[string]interface{})
+                 fmt.Println("Extracted text:", attachment)
+		blocks, ok := attachment["blocks"].([]interface{})
+		if !ok || len(blocks) == 0 {
+			fmt.Println("No blocks found in the attachment")
+			return
+		}
+              fmt.Println("Blocks text:", blocks)
 		// // Assuming there's only one block for simplicity
 		// block := blocks[0].(map[string]interface{})
 
