@@ -16,7 +16,8 @@ func HandleEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	fmt.Println("Body:", r.Body)
+	fmt.Println(r.Body)
+		fmt.Println(r)
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading request body", http.StatusInternalServerError)
