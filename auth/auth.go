@@ -68,7 +68,7 @@ func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userName, err := view.GetUserName(token, accessTokenResponse.UserID)
+	userName, err := view.GetUserName(token, accessTokenResponse.AuthedUser.ID)
 	if err != nil {
 		fmt.Println("Error getting user name:", err)
 		return
