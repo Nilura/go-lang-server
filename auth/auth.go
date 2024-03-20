@@ -40,7 +40,6 @@ type AccessTokenResponse struct {
 
 var AccessTokenMap = make(map[string]string)
 var UserIdMap = make(map[string]string)
-var WebhookMap = make(map[string]string)
 
 func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 
@@ -57,16 +56,21 @@ func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	token := accessTokenResponse.BotAccessToken
 
-	WebhookMap[accessTokenResponse.BotAccessToken] = webhookURL
-
+	
 	AccessTokenMap[accessTokenResponse.BotUserID] = accessTokenResponse.AuthedUser.AccessToken
 	UserIdMap[accessTokenResponse.BotUserID] = accessTokenResponse.AuthedUser.ID
-
+	
 	message := fmt.Sprintf("Webhook URL: %s", webhookURL)
 
 	_, _, err := api.PostMessage(accessTokenResponse.AuthedUser.ID, slack.MsgOptionText(message, false))
 	if err != nil {
 		fmt.Printf("Error posting message to Message tab: %s\n", err)
+		return
+	}
+
+	userName, err := view.GetUserName(token, accessTokenResponse.UserID)
+	if err != nil {
+		fmt.Println("Error getting user name:", err)
 		return
 	}
 
@@ -79,21 +83,21 @@ func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 					"type": "header",
 					"text": map[string]interface{}{
 						"type": "plain_text",
-						"text": "Welcome to Randoli App Insights",
+						"text": "Welcome to App Insight Bot",
 					},
 				},
 				{
 					"type": "section",
 					"text": map[string]interface{}{
 						"type": "mrkdwn",
-						"text": "Please copy webhook url from here: " + webhookURL,
+						"text": "Hi " + userName + "\n" + message,
 					},
 				},
 			},
 		},
 	}
 
-	er := view.PublishHomeView(token, accessTokenResponse.AuthedUser.ID, payload)
+        er := view.PublishHomeView(token, accessTokenResponse.AuthedUser.ID, payload)
 	if er != nil {
 		fmt.Println("Error publishing home view:", er)
 		return
@@ -105,9 +109,8 @@ func getOAuthAccessToken(code string) (string, AccessTokenResponse) {
 	clientID := os.Getenv("SLACK_CLIENT_ID")
 	clientSecret := os.Getenv("SLACK_CLIENT_SECRET")
 	redirectURI := os.Getenv("SLACK_REDIRECT_URI")
-=
 
-        url := fmt.Sprintf("https://slack.com/api/oauth.v2.access?client_id=%s&client_secret=%s&code=%s&redirect_uri=%s", clientID, clientSecret, code, redirectURI) 
+	url := fmt.Sprintf("https://slack.com/api/oauth.v2.access?client_id=%s&client_secret=%s&code=%s&redirect_uri=%s", clientID, clientSecret, code, redirectURI)
 
 	resp, err := http.Get(url)
 	if err != nil {
