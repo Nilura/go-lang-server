@@ -52,7 +52,7 @@ func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	webhookURL, accessTokenResponse := getOAuthAccessToken(code)
 	fmt.Fprintf(w, "The Randoli Slack App was installed successfully\nPlease copy the following webhook url when you create the integration (This is also available from the Slack Apps Home Page): %s", webhookURL)
 
-	api := slack.New(accessTokenResponse.AuthedUser.AccessToken, slack.OptionDebug(true))
+	api := slack.New(accessTokenResponse.BotAccessToken, slack.OptionDebug(true))
 
 	token := accessTokenResponse.BotAccessToken
 
@@ -66,7 +66,7 @@ func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
         fmt.Println(accessTokenResponse.BotUserID)
         fmt.Println("=================")
 
-	_, _, err := api.PostMessage(accessTokenResponse.BotUserID, slack.MsgOptionText(message, false))
+	_, _, err := api.PostMessage("", slack.MsgOptionText(message, false))
 	if err != nil {
 		fmt.Printf("Error posting message to Message tab: %s\n", err)
 		return
