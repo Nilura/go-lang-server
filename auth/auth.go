@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"app-insights-bot/view"
 	"encoding/json"
 	"fmt"
+	"go-lang-server/view"
 	"io/ioutil"
 	"net/http"
 	"os"
