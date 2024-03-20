@@ -105,8 +105,9 @@ func getOAuthAccessToken(code string) (string, AccessTokenResponse) {
 	clientID := os.Getenv("SLACK_CLIENT_ID")
 	clientSecret := os.Getenv("SLACK_CLIENT_SECRET")
 	redirectURI := os.Getenv("SLACK_REDIRECT_URI")
+=
 
-	url := fmt.Sprintf("https://slack.com/api/oauth.v2.access?client_id=%s&client_secret=%s&code=%s&redirect_uri=%s", clientID, clientSecret, code, redirectURI)
+        url := fmt.Sprintf("https://slack.com/api/oauth.v2.access?client_id=%s&client_secret=%s&code=%s&redirect_uri=%s", clientID, clientSecret, code, redirectURI) 
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -116,7 +117,7 @@ func getOAuthAccessToken(code string) (string, AccessTokenResponse) {
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(body))
+
 	if err != nil {
 		panic(err)
 	}
