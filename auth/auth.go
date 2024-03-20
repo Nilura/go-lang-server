@@ -1,9 +1,9 @@
 package auth
 
 import (
+	"app-insights-bot/view"
 	"encoding/json"
 	"fmt"
-	"go-lang-server/view"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -12,27 +12,35 @@ import (
 )
 
 type AccessTokenResponse struct {
-	OK              bool   `json:"ok"`
-	AccessToken     string `json:"access_token"`
-	Scope           string `json:"scope"`
-	UserID          string `json:"user_id"`
-	TeamID          string `json:"team_id"`
-	EnterpriseID    string `json:"enterprise_id"`
-	TeamName        string `json:"team_name"`
-	IncomingWebhook struct {
+	OK         bool   `json:"ok"`
+	AppID      string `json:"app_id"`
+	AuthedUser struct {
+		ID          string `json:"id"`
+		Scope       string `json:"scope"`
+		AccessToken string `json:"access_token"`
+		TokenType   string `json:"token_type"`
+	} `json:"authed_user"`
+	Scope          string `json:"scope"`
+	TokenType      string `json:"token_type"`
+	BotAccessToken string `json:"access_token"`
+	BotUserID      string `json:"bot_user_id"`
+	Team           struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"team"`
+	Enterprise          interface{} `json:"enterprise"`
+	IsEnterpriseInstall bool        `json:"is_enterprise_install"`
+	IncomingWebhook     struct {
 		Channel          string `json:"channel"`
 		ChannelID        string `json:"channel_id"`
 		ConfigurationURL string `json:"configuration_url"`
 		URL              string `json:"url"`
 	} `json:"incoming_webhook"`
-	Bot struct {
-		Bot_access_token string `json:"bot_access_token"`
-		Bot_user_id      string `json:"bot_user_id"`
-	} `json:"bot"`
 }
 
 var AccessTokenMap = make(map[string]string)
 var UserIdMap = make(map[string]string)
+var WebhookMap = make(map[string]string)
 
 func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 
@@ -45,24 +53,20 @@ func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	webhookURL, accessTokenResponse := getOAuthAccessToken(code)
 	fmt.Fprintf(w, "The Randoli Slack App was installed successfully\nPlease copy the following webhook url when you create the integration (This is also available from the Slack Apps Home Page): %s", webhookURL)
 
-	api := slack.New(accessTokenResponse.AccessToken, slack.OptionDebug(true))
+	api := slack.New(accessTokenResponse.AuthedUser.AccessToken, slack.OptionDebug(true))
 
-	token := accessTokenResponse.Bot.Bot_access_token
+	token := accessTokenResponse.BotAccessToken
 
-	AccessTokenMap[accessTokenResponse.Bot.Bot_user_id] = accessTokenResponse.AccessToken
-	UserIdMap[accessTokenResponse.Bot.Bot_user_id] = accessTokenResponse.UserID
+	WebhookMap[accessTokenResponse.BotAccessToken] = webhookURL
+
+	AccessTokenMap[accessTokenResponse.BotUserID] = accessTokenResponse.AuthedUser.AccessToken
+	UserIdMap[accessTokenResponse.BotUserID] = accessTokenResponse.AuthedUser.ID
 
 	message := fmt.Sprintf("Webhook URL: %s", webhookURL)
 
-	_, _, err := api.PostMessage(accessTokenResponse.UserID, slack.MsgOptionText(message, false))
+	_, _, err := api.PostMessage(accessTokenResponse.AuthedUser.ID, slack.MsgOptionText(message, false))
 	if err != nil {
 		fmt.Printf("Error posting message to Message tab: %s\n", err)
-		return
-	}
-
-	userName, err := view.GetUserName(token, accessTokenResponse.UserID)
-	if err != nil {
-		fmt.Println("Error getting user name:", err)
 		return
 	}
 
@@ -75,21 +79,21 @@ func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 					"type": "header",
 					"text": map[string]interface{}{
 						"type": "plain_text",
-						"text": "Welcome to App Insight Bot",
+						"text": "Welcome to Randoli App Insights",
 					},
 				},
 				{
 					"type": "section",
 					"text": map[string]interface{}{
 						"type": "mrkdwn",
-						"text": "Hi " + userName + "\n" + message,
+						"text": "Please copy webhook url from here: " + webhookURL,
 					},
 				},
 			},
 		},
 	}
 
-	er := view.PublishHomeView(token, accessTokenResponse.UserID, payload)
+	er := view.PublishHomeView(token, accessTokenResponse.AuthedUser.ID, payload)
 	if er != nil {
 		fmt.Println("Error publishing home view:", er)
 		return
