@@ -61,8 +61,12 @@ func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	UserIdMap[accessTokenResponse.BotUserID] = accessTokenResponse.AuthedUser.ID
 	
 	message := fmt.Sprintf("Webhook URL: %s", webhookURL)
+        fmt.Println("=================")
+	fmt.Println(accessTokenResponse.AuthedUser.ID)
+        fmt.Println(accessTokenResponse.BotUserID)
+        fmt.Println("=================")
 
-	_, _, err := api.PostMessage(accessTokenResponse.BotUserID, slack.MsgOptionText(message, false))
+	_, _, err := api.PostMessage(accessTokenResponse.AuthedUser.ID, slack.MsgOptionText(message, false))
 	if err != nil {
 		fmt.Printf("Error posting message to Message tab: %s\n", err)
 		return
